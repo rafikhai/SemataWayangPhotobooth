@@ -12,7 +12,7 @@ const templates = [
 
         background: "#ffffff",
 
-        countdown: 3,
+        countdown: 5,
 
         frames: [
 
@@ -60,7 +60,7 @@ const templates = [
 
         background: "#ffffff",
 
-        countdown: 3,
+        countdown: 5,
 
         frames: [
 
