@@ -19,56 +19,60 @@ async function uploadFileToVercel(
         return null;
     }
 
+    const formData =
+        new FormData();
 
-    /*
-     * @vercel/blob/client
-     * diambil langsung dari ESM CDN.
-     */
-
-    const {
-        upload
-    } = await import(
-        "https://esm.sh/@vercel/blob/client@2.4.0"
+    formData.append(
+        "file",
+        blob,
+        filename
     );
 
+    formData.append(
+        "filename",
+        filename
+    );
 
-    const result =
-        await upload(
-            filename,
-            blob,
+    formData.append(
+        "contentType",
+        contentType ||
+        blob.type ||
+        "application/octet-stream"
+    );
+
+    const response =
+        await fetch(
+            "/api/upload",
             {
-
-                access: "public",
-
-                handleUploadUrl:
-                    "/api/upload",
-
-                contentType:
-
-                    contentType ||
-                    blob.type ||
-                    "application/octet-stream",
-
-                /*
-                 * Video kemungkinan lebih besar,
-                 * sehingga gunakan multipart.
-                 */
-
-                multipart:
-                    contentType ===
-                    "video/webm",
-
-                onUploadProgress:
-                    event => {
-
-                        console.log(
-                            `${filename}: ${Math.round(event.percentage)}%`
-                        );
-                    }
-
+                method: "POST",
+                body: formData
             }
         );
 
+    if (!response.ok) {
+
+        const errorText =
+            await response.text();
+
+        throw new Error(
+            `Upload gagal (${response.status}): ${errorText}`
+        );
+    }
+
+    const result =
+        await response.json();
+
+    if (!result.url) {
+
+        throw new Error(
+            "Server tidak mengembalikan URL Blob."
+        );
+    }
+
+    console.log(
+        "File berhasil di-upload:",
+        result.url
+    );
 
     return result.url;
 }
@@ -328,7 +332,7 @@ function generateDownloadQR(
 }
 
 /* =====================================================
-   GENERATE DOWNLOAD QR CODE
+   GENERATE DOWNLOADQR CODE
 ===================================================== */
 async function createDownloadQR() {
 
