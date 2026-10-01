@@ -1,17 +1,399 @@
+/* =====================================================
+   VERCEL BLOB UPLOAD
+===================================================== */
+
+let downloadSession = null;
+
+
+/*
+ * Upload satu file ke Vercel Blob.
+ */
+
+async function uploadFileToVercel(
+    blob,
+    filename,
+    contentType
+) {
+
+    if (!blob) {
+        return null;
+    }
+
+
+    /*
+     * @vercel/blob/client
+     * diambil langsung dari ESM CDN.
+     */
+
+    const {
+        upload
+    } = await import(
+        "https://esm.sh/@vercel/blob/client@2.4.0"
+    );
+
+
+    const result =
+        await upload(
+            filename,
+            blob,
+            {
+
+                access: "public",
+
+                handleUploadUrl:
+                    "/api/upload",
+
+                contentType:
+
+                    contentType ||
+                    blob.type ||
+                    "application/octet-stream",
+
+                /*
+                 * Video kemungkinan lebih besar,
+                 * sehingga gunakan multipart.
+                 */
+
+                multipart:
+                    contentType ===
+                    "video/webm",
+
+                onUploadProgress:
+                    event => {
+
+                        console.log(
+                            `${filename}: ${Math.round(event.percentage)}%`
+                        );
+                    }
+
+            }
+        );
+
+
+    return result.url;
+}
+
+/* =====================================================
+   UPLOAD ALL GENERATED MEDIA
+===================================================== */
+
+async function uploadAllGeneratedMedia() {
+
+    if (!generatedMedia) {
+
+        throw new Error(
+            "Media belum tersedia."
+        );
+    }
+
+
+    const timestamp =
+        Date.now();
+
+
+    const uploaded = {
+
+        jpg: null,
+
+        originals: [],
+
+        gif: null,
+
+        video: null
+    };
+
+
+    /*
+     * JPG FRAME
+     */
+
+    if (
+        generatedMedia.jpgBlob
+    ) {
+
+        uploaded.jpg =
+            await uploadFileToVercel(
+
+                generatedMedia.jpgBlob,
+
+                `semata-wayang/${timestamp}/final.jpg`,
+
+                "image/jpeg"
+            );
+    }
+
+
+    /*
+     * FOTO ASLI
+     */
+
+    if (
+        generatedMedia.originalPhotoBlobs &&
+        generatedMedia.originalPhotoBlobs.length
+    ) {
+
+        for (
+            let i = 0;
+            i <
+            generatedMedia.originalPhotoBlobs.length;
+            i++
+        ) {
+
+            const blob =
+                generatedMedia
+                    .originalPhotoBlobs[i];
+
+
+            if (!blob) {
+                continue;
+            }
+
+
+            const url =
+                await uploadFileToVercel(
+
+                    blob,
+
+                    `semata-wayang/${timestamp}/foto-${i + 1}.jpg`,
+
+                    "image/jpeg"
+                );
+
+
+            if (url) {
+
+                uploaded.originals.push(
+                    url
+                );
+            }
+        }
+    }
+
+
+    /*
+     * GIF
+     */
+
+    if (
+        generatedMedia.gifBlob
+    ) {
+
+        uploaded.gif =
+            await uploadFileToVercel(
+
+                generatedMedia.gifBlob,
+
+                `semata-wayang/${timestamp}/photo.gif`,
+
+                "image/gif"
+            );
+    }
+
+
+    /*
+     * VIDEO
+     */
+
+    if (
+        generatedMedia.videoBlob
+    ) {
+
+        uploaded.video =
+            await uploadFileToVercel(
+
+                generatedMedia.videoBlob,
+
+                `semata-wayang/${timestamp}/photo.webm`,
+
+                "video/webm"
+            );
+    }
+
+
+    return uploaded;
+}
+
+/* =====================================================
+   CREATE DOWNLOAD PAGE URL
+===================================================== */
+
+function createDownloadPageUrl(
+    files
+) {
+
+    const json =
+        JSON.stringify(
+            files
+        );
+
+
+    /*
+     * Encode JSON menjadi Base64.
+     */
+
+    const encoded =
+        btoa(
+            encodeURIComponent(
+                json
+            )
+        );
+
+
+    /*
+     * Halaman download berada
+     * di domain Vercel yang sama.
+     */
+
+    return (
+        window.location.origin +
+        "/download.html?files=" +
+        encodeURIComponent(
+            encoded
+        )
+    );
+}
+/* =====================================================
+   GENERATE QR CODE
+===================================================== */
+
+function generateDownloadQR(
+    downloadUrl
+) {
+
+    const qrContainer =
+        document.getElementById(
+            "qrCode"
+        );
+
+
+    const status =
+        document.getElementById(
+            "qrDownloadStatus"
+        );
+
+
+    if (!qrContainer) {
+        return;
+    }
+
+
+    qrContainer.innerHTML = "";
+
+
+    if (
+        typeof QRCode ===
+        "undefined"
+    ) {
+
+        if (status) {
+
+            status.textContent =
+                "QR Code tidak dapat dimuat.";
+        }
+
+        return;
+    }
+
+
+    new QRCode(
+        qrContainer,
+        {
+
+            text:
+                downloadUrl,
+
+            width:
+                256,
+
+            height:
+                256,
+
+            colorDark:
+                "#111111",
+
+            colorLight:
+                "#ffffff",
+
+            // correctLevel:
+            //     QRCode.CORRECT_LEVEL_H
+        }
+    );
+
+
+    if (status) {
+
+        status.textContent =
+            "Scan QR Code menggunakan kamera HP.";
+    }
+}
+
+/* =====================================================
+   RESET QR
+===================================================== */
+
+function resetDownloadQR() {
+
+    downloadSession = null;
+
+
+    const qrContainer =
+        document.getElementById(
+            "qrCode"
+        );
+
+
+    const status =
+        document.getElementById(
+            "qrDownloadStatus"
+        );
+
+
+    if (qrContainer) {
+
+        qrContainer.innerHTML =
+            "";
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "Menyiapkan QR Code...";
+    }
+}
+
+/* =====================================================
+   BATAS
+===================================================== */
+
+
 let generatedMedia = {
 
+    /* JPG DENGAN FRAME */
     jpgBlob: null,
+
+    /* FOTO ASLI TANPA FRAME */
+    originalPhotoBlobs: [],
+
+    /* GIF TANPA FRAME */
     gifBlob: null,
+
+    /* VIDEO DENGAN FRAME */
     videoBlob: null,
 
+
     jpgUrl: null,
+
+    originalPhotoUrls: [],
+
     gifUrl: null,
+
     videoUrl: null
 };
 
 
 /* =====================================================
-   CANVAS TO BLOB
+   CANVAS → BLOB
 ===================================================== */
 
 function canvasToBlob(
@@ -33,7 +415,7 @@ function canvasToBlob(
 
 
 /* =====================================================
-   FINAL JPG
+   GENERATE JPG WITH FRAME
 ===================================================== */
 
 async function generateJPG() {
@@ -52,122 +434,58 @@ async function generateJPG() {
 
 
 /* =====================================================
-   CREATE GIF FRAME
+   GENERATE ORIGINAL PHOTOS
+   TANPA FRAME
 ===================================================== */
 
-function createGifFrame(
-    photo,
-    photoIndex
-) {
+async function generateOriginalPhotos() {
 
-    const canvas =
-        document.createElement("canvas");
+    const photos = [];
 
-    canvas.width =
-        selectedTemplate.width;
+    if (
+        !capturedPhotos ||
+        capturedPhotos.length === 0
+    ) {
 
-    canvas.height =
-        selectedTemplate.height;
+        return photos;
+    }
 
 
-    const ctx =
-        canvas.getContext("2d");
+    for (
+        let i = 0;
+        i < capturedPhotos.length;
+        i++
+    ) {
+
+        const photo =
+            capturedPhotos[i];
+
+        if (!photo) {
+            continue;
+        }
 
 
-    /*
-       Background
-    */
-
-    ctx.fillStyle =
-        selectedTemplate.background;
-
-    ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    /*
-       Selected photo fills
-       its corresponding frame.
-    */
-
-    const frame =
-        selectedTemplate.frames[
-            photoIndex
-        ];
-
-
-    drawPhotoCover(
-        ctx,
-        photo,
-        frame,
-        photoSettings[photoIndex]
-    );
-
-
-    /*
-       Add remaining frames as
-       empty / white areas.
-    */
-
-    selectedTemplate.frames.forEach(
-        (otherFrame, index) => {
-
-            if (index === photoIndex) {
-                return;
-            }
-
-            ctx.strokeStyle =
-                "#eeeeee";
-
-            ctx.lineWidth = 2;
-
-            ctx.strokeRect(
-                otherFrame.x,
-                otherFrame.y,
-                otherFrame.width,
-                otherFrame.height
+        const blob =
+            await canvasToBlob(
+                photo,
+                "image/jpeg",
+                0.95
             );
 
+
+        if (blob) {
+            photos.push(blob);
         }
-    );
+    }
 
 
-    /*
-       SEMATA WAYANG
-    */
-
-    const footer =
-        selectedTemplate.footer;
-
-    ctx.fillStyle =
-        "#111111";
-
-    ctx.font =
-        `700 ${footer.fontSize}px Arial`;
-
-    ctx.textAlign =
-        "center";
-
-    ctx.textBaseline =
-        "middle";
-
-    ctx.fillText(
-        footer.text,
-        footer.x,
-        footer.y
-    );
-
-
-    return canvas;
+    return photos;
 }
 
 
 /* =====================================================
    GENERATE GIF
+   TANPA FRAME / TANPA TEMPLATE
 ===================================================== */
 
 async function generateGIF() {
@@ -176,12 +494,14 @@ async function generateGIF() {
         !capturedPhotos ||
         capturedPhotos.length === 0
     ) {
+
         return null;
     }
 
 
     if (
-        typeof GIF === "undefined"
+        typeof GIF ===
+        "undefined"
     ) {
 
         throw new Error(
@@ -189,6 +509,38 @@ async function generateGIF() {
         );
     }
 
+
+    /*
+     * Ukuran GIF.
+     *
+     * Menggunakan rasio foto asli,
+     * bukan rasio template.
+     */
+
+    const firstPhoto =
+        capturedPhotos.find(
+            photo => photo
+        );
+
+
+    if (!firstPhoto) {
+        return null;
+    }
+
+
+    const gifWidth = 480;
+
+    const gifHeight =
+        Math.round(
+            gifWidth *
+            firstPhoto.height /
+            firstPhoto.width
+        );
+
+
+    /*
+     * Worker GIF.js
+     */
 
     const workerResponse =
         await fetch(
@@ -213,77 +565,95 @@ async function generateGIF() {
 
             quality: 10,
 
-            width: 480,
+            width: gifWidth,
 
-            height:
-                Math.round(
-                    480 *
-                    selectedTemplate.height /
-                    selectedTemplate.width
-                ),
+            height: gifHeight,
 
-            workerScript:
-                workerURL
+            workerScript: workerURL
         });
 
 
+    /*
+     * Setiap foto menjadi satu frame GIF.
+     *
+     * 2 foto → foto 1 → foto 2
+     *
+     * 3 foto → foto 1 → foto 2 → foto 3
+     */
+
     capturedPhotos.forEach(
-        (photo, index) => {
+        photo => {
 
-            const frameCanvas =
-                createGifFrame(
-                    photo,
-                    index
-                );
+            if (!photo) {
+                return;
+            }
 
 
-            const smallCanvas =
+            const canvas =
                 document.createElement(
                     "canvas"
                 );
 
 
-            smallCanvas.width =
-                480;
+            canvas.width =
+                gifWidth;
 
-            smallCanvas.height =
-                Math.round(
-                    480 *
-                    selectedTemplate.height /
-                    selectedTemplate.width
-                );
+            canvas.height =
+                gifHeight;
 
 
-            const smallCtx =
-                smallCanvas.getContext(
+            const ctx =
+                canvas.getContext(
                     "2d"
                 );
 
 
-            smallCtx.drawImage(
-                frameCanvas,
+            /*
+             * Background putih
+             */
 
+            ctx.fillStyle =
+                "#ffffff";
+
+            ctx.fillRect(
                 0,
                 0,
+                gifWidth,
+                gifHeight
+            );
 
-                smallCanvas.width,
-                smallCanvas.height
+
+            /*
+             * Foto memenuhi canvas.
+             */
+
+            drawImageContain(
+                ctx,
+                photo,
+                0,
+                0,
+                gifWidth,
+                gifHeight
             );
 
 
             gif.addFrame(
-                smallCanvas,
+                canvas,
                 {
-                    delay: 800
+                    delay: 800,
+
+                    copy: true
                 }
             );
-
         }
     );
 
 
     return new Promise(
-        (resolve, reject) => {
+        (
+            resolve,
+            reject
+        ) => {
 
             gif.on(
                 "finished",
@@ -294,7 +664,6 @@ async function generateGIF() {
                     );
 
                     resolve(blob);
-
                 }
             );
 
@@ -312,44 +681,895 @@ async function generateGIF() {
                             "GIF generation dibatalkan."
                         )
                     );
-
                 }
             );
 
 
             gif.render();
-
         }
     );
 }
 
 
 /* =====================================================
-   VIDEO WITH BRANDING
+   DRAW IMAGE CONTAIN
 ===================================================== */
 
-async function createBrandedVideo(
-    videoBlob
+function drawImageContain(
+    ctx,
+    image,
+    x,
+    y,
+    width,
+    height
 ) {
 
+    const imageRatio =
+        image.width /
+        image.height;
+
+    const boxRatio =
+        width /
+        height;
+
+
+    let drawWidth;
+    let drawHeight;
+
+
+    if (
+        imageRatio >
+        boxRatio
+    ) {
+
+        drawWidth =
+            width;
+
+        drawHeight =
+            width /
+            imageRatio;
+
+    } else {
+
+        drawHeight =
+            height;
+
+        drawWidth =
+            height *
+            imageRatio;
+    }
+
+
+    const drawX =
+        x +
+        (
+            width -
+            drawWidth
+        ) /
+        2;
+
+
+    const drawY =
+        y +
+        (
+            height -
+            drawHeight
+        ) /
+        2;
+
+
+    ctx.drawImage(
+        image,
+        drawX,
+        drawY,
+        drawWidth,
+        drawHeight
+    );
+}
+
+
+/* =====================================================
+   LOAD VIDEO ELEMENT
+===================================================== */
+
+function loadVideoFromBlob(
+    blob
+) {
+
+    return new Promise(
+        (
+            resolve,
+            reject
+        ) => {
+
+            const video =
+                document.createElement(
+                    "video"
+                );
+
+
+            const url =
+                URL.createObjectURL(
+                    blob
+                );
+
+
+            video.src =
+                url;
+
+            video.muted =
+                true;
+
+            video.playsInline =
+                true;
+
+            video.preload =
+                "auto";
+
+
+            video.onloadedmetadata =
+                () => {
+
+                    resolve({
+                        video,
+                        url
+                    });
+                };
+
+
+            video.onerror =
+                () => {
+
+                    URL.revokeObjectURL(
+                        url
+                    );
+
+                    reject(
+                        new Error(
+                            "Video tidak dapat dimuat."
+                        )
+                    );
+                };
+
+
+            video.load();
+        }
+    );
+}
+
+
+/* =====================================================
+   DRAW VIDEO COVER
+===================================================== */
+
+function drawVideoCover(
+    ctx,
+    video,
+    frame,
+    settings
+) {
+
+    if (
+        !video ||
+        !frame
+    ) {
+
+        return;
+    }
+
+
     /*
-       Untuk MVP, video kamera tetap
-       disimpan sebagai video WebM.
+     * Ukuran video asli
+     */
 
-       Branding frame akan ditambahkan
-       menggunakan overlay HTML/canvas
-       pada tahap berikutnya.
+    const sourceWidth =
+        video.videoWidth ||
+        1280;
 
-       Untuk sekarang kita memastikan
-       video hasil capture tersedia.
-    */
+    const sourceHeight =
+        video.videoHeight ||
+        720;
+
+
+    /*
+     * COVER
+     */
+
+    const sourceRatio =
+        sourceWidth /
+        sourceHeight;
+
+    const frameRatio =
+        frame.width /
+        frame.height;
+
+
+    let cropWidth =
+        sourceWidth;
+
+    let cropHeight =
+        sourceHeight;
+
+
+    let cropX = 0;
+    let cropY = 0;
+
+
+    if (
+        sourceRatio >
+        frameRatio
+    ) {
+
+        cropWidth =
+            sourceHeight *
+            frameRatio;
+
+        cropX =
+            (
+                sourceWidth -
+                cropWidth
+            ) /
+            2;
+
+    } else {
+
+        cropHeight =
+            sourceWidth /
+            frameRatio;
+
+        cropY =
+            (
+                sourceHeight -
+                cropHeight
+            ) /
+            2;
+    }
+
+
+    /*
+     * Zoom
+     */
+
+    const zoom =
+        settings &&
+        settings.zoom
+            ? settings.zoom
+            : 1;
+
+
+    const zoomCropWidth =
+        cropWidth /
+        zoom;
+
+
+    const zoomCropHeight =
+        cropHeight /
+        zoom;
+
+
+    cropX +=
+        (
+            cropWidth -
+            zoomCropWidth
+        ) /
+        2;
+
+
+    cropY +=
+        (
+            cropHeight -
+            zoomCropHeight
+        ) /
+        2;
+
+
+    /*
+     * Position X/Y
+     */
+
+    const positionX =
+        settings &&
+        typeof settings.x === "number"
+            ? settings.x
+            : 0;
+
+
+    const positionY =
+        settings &&
+        typeof settings.y === "number"
+            ? settings.y
+            : 0;
+
+
+    cropX +=
+        positionX *
+        (
+            cropWidth -
+            zoomCropWidth
+        );
+
+
+    cropY +=
+        positionY *
+        (
+            cropHeight -
+            zoomCropHeight
+        );
+
+
+    /*
+     * Mirror video kembali
+     * agar sama dengan foto hasil kamera.
+     */
+
+    ctx.save();
+
+    ctx.translate(
+        frame.x +
+        frame.width,
+        frame.y
+    );
+
+    ctx.scale(
+        -1,
+        1
+    );
+
+
+    ctx.drawImage(
+        video,
+
+        cropX,
+        cropY,
+        zoomCropWidth,
+        zoomCropHeight,
+
+        0,
+        0,
+        frame.width,
+        frame.height
+    );
+
+
+    ctx.restore();
+}
+
+
+/* =====================================================
+   GENERATE VIDEO WITH TEMPLATE
+===================================================== */
+
+async function createBrandedVideo() {
+
+    if (
+        !capturedVideos ||
+        capturedVideos.length === 0
+    ) {
+
+        return null;
+    }
+
+
+    if (!selectedTemplate) {
+        return null;
+    }
+
+
+    /*
+     * Pastikan overlay sudah tersedia.
+     */
+
+    await waitForTemplateOverlay();
+
+
+    /*
+     * Load semua video.
+     */
+
+    const loadedVideos = [];
+
+
+    for (
+        let i = 0;
+        i < capturedVideos.length;
+        i++
+    ) {
+
+        const blob =
+            capturedVideos[i];
+
+
+        if (!blob) {
+            continue;
+        }
+
+
+        const loaded =
+            await loadVideoFromBlob(
+                blob
+            );
+
+
+        loadedVideos.push({
+            index: i,
+            video: loaded.video,
+            url: loaded.url
+        });
+    }
+
+
+    if (
+        loadedVideos.length === 0
+    ) {
+
+        return null;
+    }
+
+
+    /*
+     * Ukuran output video.
+     *
+     * 600 x proporsional
+     * supaya file tidak terlalu berat.
+     */
+
+    const videoWidth = 600;
+
+    const videoHeight =
+        Math.round(
+            videoWidth *
+            selectedTemplate.height /
+            selectedTemplate.width
+        );
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+
+    canvas.width =
+        videoWidth;
+
+    canvas.height =
+        videoHeight;
+
+
+    const ctx =
+        canvas.getContext(
+            "2d"
+        );
+
+
+    /*
+     * Canvas stream.
+     */
+
+    const canvasStream =
+        canvas.captureStream(30);
+
+
+    /*
+     * Kita tidak memasukkan audio kamera
+     * karena video terdiri dari beberapa
+     * rekaman yang dimainkan bersamaan.
+     */
+
+    const mimeType =
+        getSupportedMimeType();
+
+
+    if (!mimeType) {
+
+        loadedVideos.forEach(
+            item => {
+
+                URL.revokeObjectURL(
+                    item.url
+                );
+            }
+        );
+
+        throw new Error(
+            "Browser tidak mendukung format video."
+        );
+    }
+
+
+    const recorder =
+        new MediaRecorder(
+            canvasStream,
+            {
+                mimeType
+            }
+        );
+
+
+    const chunks = [];
+
+
+    recorder.ondataavailable =
+        event => {
+
+            if (
+                event.data &&
+                event.data.size > 0
+            ) {
+
+                chunks.push(
+                    event.data
+                );
+            }
+        };
+
+
+    /*
+     * Tentukan durasi video.
+     *
+     * Menggunakan durasi terpanjang
+     * dari seluruh rekaman.
+     */
+
+    let duration = 0;
+
+
+    loadedVideos.forEach(
+        item => {
+
+            if (
+                item.video.duration &&
+                isFinite(
+                    item.video.duration
+                )
+            ) {
+
+                duration =
+                    Math.max(
+                        duration,
+                        item.video.duration
+                    );
+            }
+        }
+    );
+
+
+    /*
+     * Kalau browser belum memberikan
+     * durasi yang valid, gunakan 5.3 detik.
+     */
+
+    if (
+        !duration ||
+        !isFinite(duration)
+    ) {
+
+        duration = 5.3;
+    }
+
+
+    /*
+     * Siapkan semua video.
+     */
+
+    for (
+        const item of loadedVideos
+    ) {
+
+        item.video.currentTime = 0;
+
+        item.video.muted = true;
+
+        item.video.playsInline = true;
+
+        try {
+
+            await item.video.play();
+
+        } catch (error) {
+
+            console.warn(
+                "Video tidak dapat autoplay:",
+                error
+            );
+        }
+    }
+
+
+    /*
+     * Rekam canvas.
+     */
+
+    recorder.start();
+
+
+    const startTime =
+        performance.now();
+
+
+    /*
+     * Render loop.
+     */
+
+    await new Promise(resolve => {
+
+        function renderFrame() {
+
+            const elapsed =
+                (
+                    performance.now() -
+                    startTime
+                ) /
+                1000;
+
+
+            /*
+             * Background.
+             */
+
+            ctx.fillStyle =
+                selectedTemplate.background ||
+                "#ffffff";
+
+            ctx.fillRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+
+            /*
+             * Scale dari template asli
+             * ke ukuran video.
+             */
+
+            const scaleX =
+                videoWidth /
+                selectedTemplate.width;
+
+            const scaleY =
+                videoHeight /
+                selectedTemplate.height;
+
+
+            /*
+             * Gambar setiap video
+             * ke frame masing-masing.
+             */
+
+            loadedVideos.forEach(
+                item => {
+
+                    const frame =
+                        selectedTemplate.frames[
+                            item.index
+                        ];
+
+
+                    if (!frame) {
+                        return;
+                    }
+
+
+                    const settings =
+                        photoSettings &&
+                        photoSettings[
+                            item.index
+                        ]
+                            ? photoSettings[
+                                item.index
+                            ]
+                            : null;
+
+
+                    /*
+                     * Simpan transform.
+                     */
+
+                    ctx.save();
+
+
+                    ctx.scale(
+                        scaleX,
+                        scaleY
+                    );
+
+
+                    drawVideoCover(
+                        ctx,
+                        item.video,
+                        frame,
+                        settings
+                    );
+
+
+                    ctx.restore();
+                }
+            );
+
+
+            /*
+             * FRAME / OVERLAY
+             */
+
+            if (overlayImage) {
+
+                ctx.drawImage(
+                    overlayImage,
+
+                    0,
+                    0,
+
+                    videoWidth,
+                    videoHeight
+                );
+            }
+
+
+            /*
+             * Untuk template tanpa overlay,
+             * tambahkan frame kosong / garis.
+             */
+
+            if (
+                !selectedTemplate.overlay
+            ) {
+
+                selectedTemplate.frames.forEach(
+                    frame => {
+
+                        ctx.save();
+
+                        ctx.scale(
+                            scaleX,
+                            scaleY
+                        );
+
+
+                        ctx.strokeStyle =
+                            "#eeeeee";
+
+                        ctx.lineWidth =
+                            2;
+
+
+                        ctx.strokeRect(
+                            frame.x,
+                            frame.y,
+                            frame.width,
+                            frame.height
+                        );
+
+
+                        ctx.restore();
+                    }
+                );
+
+
+                /*
+                 * Footer
+                 */
+
+                const footer =
+                    selectedTemplate.footer;
+
+
+                if (footer) {
+
+                    ctx.save();
+
+                    ctx.scale(
+                        scaleX,
+                        scaleY
+                    );
+
+
+                    ctx.fillStyle =
+                        "#111111";
+
+                    ctx.font =
+                        `700 ${footer.fontSize}px Arial`;
+
+                    ctx.textAlign =
+                        "center";
+
+                    ctx.textBaseline =
+                        "middle";
+
+
+                    ctx.fillText(
+                        footer.text,
+                        footer.x,
+                        footer.y
+                    );
+
+
+                    ctx.restore();
+                }
+            }
+
+
+            /*
+             * Lanjut render.
+             */
+
+            if (
+                elapsed <
+                duration
+            ) {
+
+                requestAnimationFrame(
+                    renderFrame
+                );
+
+            } else {
+
+                resolve();
+            }
+        }
+
+
+        renderFrame();
+    });
+
+
+    /*
+     * Stop recorder.
+     */
+
+    const videoBlob =
+        await new Promise(resolve => {
+
+            recorder.onstop =
+                () => {
+
+                    resolve(
+                        new Blob(
+                            chunks,
+                            {
+                                type:
+                                    recorder.mimeType ||
+                                    "video/webm"
+                            }
+                        )
+                    );
+                };
+
+
+            recorder.stop();
+        });
+
+
+    /*
+     * Stop video.
+     */
+
+    loadedVideos.forEach(
+        item => {
+
+            item.video.pause();
+
+            URL.revokeObjectURL(
+                item.url
+            );
+        }
+    );
+
+
+    canvasStream
+        .getTracks()
+        .forEach(track => {
+            track.stop();
+        });
+
 
     return videoBlob;
 }
 
 
 /* =====================================================
-   GENERATE ALL
+   GENERATE ALL MEDIA
 ===================================================== */
 
 async function generateAllMedia() {
@@ -359,68 +1579,122 @@ async function generateAllMedia() {
 
     try {
 
+        await waitForTemplateOverlay();
+
+
+        if (
+            typeof renderEditor ===
+            "function"
+        ) {
+
+            renderEditor();
+        }
+
+
         /*
-           JPG
-        */
+         * JPG DENGAN FRAME
+         */
 
         generatedMedia.jpgBlob =
             await generateJPG();
 
 
         /*
-           GIF
-        */
+         * FOTO ASLI TANPA FRAME
+         */
+
+        generatedMedia.originalPhotoBlobs =
+            await generateOriginalPhotos();
+
+
+        /*
+         * GIF TANPA FRAME
+         */
 
         generatedMedia.gifBlob =
             await generateGIF();
 
 
         /*
-           VIDEO
-        */
+         * VIDEO DENGAN FRAME
+         */
 
-        if (latestVideoBlob) {
-
-            generatedMedia.videoBlob =
-                await createBrandedVideo(
-                    latestVideoBlob
-                );
-
-        } else {
-
-            generatedMedia.videoBlob =
-                null;
-        }
+        generatedMedia.videoBlob =
+            await createBrandedVideo();
 
 
         /*
-           Object URLs
-        */
+         * REVOKE OLD URL
+         */
 
-        if (generatedMedia.jpgUrl) {
+        if (
+            generatedMedia.jpgUrl
+        ) {
+
             URL.revokeObjectURL(
                 generatedMedia.jpgUrl
             );
         }
 
-        if (generatedMedia.gifUrl) {
+
+        if (
+            generatedMedia.gifUrl
+        ) {
+
             URL.revokeObjectURL(
                 generatedMedia.gifUrl
             );
         }
 
-        if (generatedMedia.videoUrl) {
+
+        if (
+            generatedMedia.videoUrl
+        ) {
+
             URL.revokeObjectURL(
                 generatedMedia.videoUrl
             );
         }
 
 
-        generatedMedia.jpgUrl =
-            URL.createObjectURL(
-                generatedMedia.jpgBlob
-            );
+        generatedMedia.originalPhotoUrls
+            .forEach(url => {
 
+                URL.revokeObjectURL(
+                    url
+                );
+
+            });
+
+
+        /*
+         * CREATE URL JPG
+         */
+
+        generatedMedia.jpgUrl =
+            generatedMedia.jpgBlob
+                ? URL.createObjectURL(
+                    generatedMedia.jpgBlob
+                )
+                : null;
+
+
+        /*
+         * CREATE URL FOTO ASLI
+         */
+
+        generatedMedia.originalPhotoUrls =
+            generatedMedia.originalPhotoBlobs
+                .map(blob =>
+                    URL.createObjectURL(
+                        blob
+                    )
+                );
+
+
+        /*
+         * CREATE URL GIF
+         */
 
         generatedMedia.gifUrl =
             generatedMedia.gifBlob
@@ -429,6 +1703,10 @@ async function generateAllMedia() {
                 )
                 : null;
 
+
+        /*
+         * CREATE URL VIDEO
+         */
 
         generatedMedia.videoUrl =
             generatedMedia.videoBlob
@@ -439,67 +1717,127 @@ async function generateAllMedia() {
 
 
         /*
-           Preview JPG
-        */
+         * JPG PREVIEW
+         */
 
-        document.getElementById(
-            "jpgPreview"
-        ).src =
-            generatedMedia.jpgUrl;
+        const jpgPreview =
+            document.getElementById(
+                "jpgPreview"
+            );
 
 
-        /*
-           Preview GIF
-        */
+        if (jpgPreview) {
 
-        document.getElementById(
-            "gifPreview"
-        ).src =
-            generatedMedia.gifUrl || "";
+            jpgPreview.src =
+                generatedMedia.jpgUrl ||
+                "";
+        }
 
 
         /*
-           Preview VIDEO
-        */
+         * ORIGINAL PHOTO PREVIEW
+         */
+
+        const originalPreview =
+            document.getElementById(
+                "originalPhotoPreview"
+            );
+
+
+        if (originalPreview) {
+
+            originalPreview.src =
+                generatedMedia.originalPhotoUrls[0] ||
+                "";
+        }
+
+
+        /*
+         * GIF PREVIEW
+         */
+
+        const gifPreview =
+            document.getElementById(
+                "gifPreview"
+            );
+
+
+        if (gifPreview) {
+
+            gifPreview.src =
+                generatedMedia.gifUrl ||
+                "";
+        }
+
+
+        /*
+         * VIDEO PREVIEW
+         */
 
         const video =
             document.getElementById(
                 "videoPreview"
             );
 
-        video.src =
-            generatedMedia.videoUrl || "";
 
-        video.load();
+        if (video) {
 
+            video.src =
+                generatedMedia.videoUrl ||
+                "";
 
-        /*
-           Show result
-        */
+            video.load();
+
+            video.play().catch(
+                () => {}
+            );
+        }
+
 
         showScreen(
             "resultScreen"
         );
+         /*
+         * Upload hasil ke Vercel Blob
+         * lalu buat QR Code.
+         */
 
+        try {
+
+            await createDownloadQR();
+
+        } catch (uploadError) {
+
+            console.error(
+                "QR upload error:",
+                uploadError
+            );
+            alert(
+                "Hasil foto sudah dibuat, tetapi QR download gagal dibuat. Pastikan koneksi internet tersedia."
+            );
+        }
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             "Gagal membuat hasil. Silakan coba lagi."
         );
 
+
     } finally {
 
         hideGeneratingState();
-
     }
 }
 
 
 /* =====================================================
-   SAVE ALL
+   DOWNLOAD ALL MEDIA
 ===================================================== */
 
 async function downloadAllMedia() {
@@ -513,41 +1851,85 @@ async function downloadAllMedia() {
             );
 
 
+    /*
+     * JPG DENGAN FRAME
+     */
+
     downloadBlob(
         generatedMedia.jpgBlob,
-        `semata-wayang-${timestamp}.jpg`
+        `semata-wayang-${timestamp}-frame.jpg`
     );
 
 
     await wait(300);
 
 
-    if (generatedMedia.gifBlob) {
+    /*
+     * FOTO ASLI TANPA FRAME
+     */
+
+    if (
+        generatedMedia.originalPhotoBlobs &&
+        generatedMedia.originalPhotoBlobs.length
+    ) {
+
+        for (
+            let i = 0;
+            i <
+            generatedMedia.originalPhotoBlobs.length;
+            i++
+        ) {
+
+            downloadBlob(
+                generatedMedia.originalPhotoBlobs[i],
+                `semata-wayang-${timestamp}-foto-${i + 1}.jpg`
+            );
+
+
+            await wait(300);
+        }
+    }
+
+
+    /*
+     * GIF
+     */
+
+    if (
+        generatedMedia.gifBlob
+    ) {
+
+        await wait(300);
+
 
         downloadBlob(
             generatedMedia.gifBlob,
             `semata-wayang-${timestamp}.gif`
         );
-
     }
 
 
-    await wait(300);
+    /*
+     * VIDEO
+     */
 
+    if (
+        generatedMedia.videoBlob
+    ) {
 
-    if (generatedMedia.videoBlob) {
+        await wait(300);
+
 
         downloadBlob(
             generatedMedia.videoBlob,
             `semata-wayang-${timestamp}.webm`
         );
-
     }
 }
 
 
 /* =====================================================
-   DOWNLOAD
+   DOWNLOAD BLOB
 ===================================================== */
 
 function downloadBlob(
@@ -559,24 +1941,44 @@ function downloadBlob(
         return;
     }
 
+
     const url =
-        URL.createObjectURL(blob);
+        URL.createObjectURL(
+            blob
+        );
+
 
     const link =
-        document.createElement("a");
+        document.createElement(
+            "a"
+        );
 
-    link.href = url;
 
-    link.download = filename;
+    link.href =
+        url;
 
-    document.body.appendChild(link);
+    link.download =
+        filename;
+
+
+    document.body.appendChild(
+        link
+    );
+
 
     link.click();
 
     link.remove();
 
+
     setTimeout(
-        () => URL.revokeObjectURL(url),
+        () => {
+
+            URL.revokeObjectURL(
+                url
+            );
+
+        },
         1000
     );
 }
@@ -593,7 +1995,15 @@ function showGeneratingState() {
             "generateButton"
         );
 
-    button.disabled = true;
+
+    if (!button) {
+        return;
+    }
+
+
+    button.disabled =
+        true;
+
 
     button.textContent =
         "MEMBUAT...";
@@ -607,7 +2017,15 @@ function hideGeneratingState() {
             "generateButton"
         );
 
-    button.disabled = false;
+
+    if (!button) {
+        return;
+    }
+
+
+    button.disabled =
+        false;
+
 
     button.textContent =
         "BUAT HASIL";
@@ -620,13 +2038,739 @@ function hideGeneratingState() {
 
 function wait(ms) {
 
-    return new Promise(resolve => {
+    return new Promise(
+        resolve => {
 
-        setTimeout(
-            resolve,
-            ms
-        );
+            setTimeout(
+                resolve,
+                ms
+            );
 
-    });
+        }
+    );
 }
 
+
+
+// let generatedMedia = {
+//     jpgBlob: null,
+//     gifBlob: null,
+//     videoBlob: null,
+
+//     jpgUrl: null,
+//     gifUrl: null,
+//     videoUrl: null
+// };
+
+
+// /* =========================================
+//    CANVAS → BLOB
+// ========================================= */
+
+// function canvasToBlob(
+//     canvas,
+//     type = "image/jpeg",
+//     quality = 0.95
+// ) {
+
+//     return new Promise(
+//         resolve => {
+
+//             canvas.toBlob(
+//                 blob =>
+//                     resolve(blob),
+//                 type,
+//                 quality
+//             );
+//         }
+//     );
+// }
+
+
+// /* =========================================
+//    GENERATE JPG
+// ========================================= */
+
+// async function generateJPG() {
+
+//     const canvas =
+//         document.getElementById(
+//             "editorCanvas"
+//         );
+
+//     return await canvasToBlob(
+//         canvas,
+//         "image/jpeg",
+//         0.95
+//     );
+// }
+
+
+// /* =========================================
+//    CREATE GIF FRAME
+// ========================================= */
+
+// function createGifFrame(
+//     photo,
+//     photoIndex
+// ) {
+
+//     const canvas =
+//         document.createElement(
+//             "canvas"
+//         );
+
+//     canvas.width =
+//         selectedTemplate.width;
+
+//     canvas.height =
+//         selectedTemplate.height;
+
+
+//     const ctx =
+//         canvas.getContext("2d");
+
+
+//     /* BACKGROUND */
+
+//     ctx.fillStyle =
+//         selectedTemplate.background ||
+//         "#ffffff";
+
+//     ctx.fillRect(
+//         0,
+//         0,
+//         canvas.width,
+//         canvas.height
+//     );
+
+
+//     /* PHOTO */
+
+//     const frame =
+//         selectedTemplate.frames[
+//             photoIndex
+//         ];
+
+//     if (
+//         photo &&
+//         frame
+//     ) {
+
+//         drawPhotoCover(
+//             ctx,
+//             photo,
+//             frame,
+//             photoSettings[
+//                 photoIndex
+//             ]
+//         );
+//     }
+
+
+//     /*
+//      * Untuk template tanpa overlay,
+//      * tampilkan frame kosong lainnya.
+//      */
+
+//     if (
+//         !selectedTemplate.overlay
+//     ) {
+
+//         selectedTemplate.frames.forEach(
+//             (otherFrame, index) => {
+
+//                 if (
+//                     index ===
+//                     photoIndex
+//                 ) {
+//                     return;
+//                 }
+
+//                 ctx.strokeStyle =
+//                     "#eeeeee";
+
+//                 ctx.lineWidth =
+//                     2;
+
+//                 ctx.strokeRect(
+//                     otherFrame.x,
+//                     otherFrame.y,
+//                     otherFrame.width,
+//                     otherFrame.height
+//                 );
+//             }
+//         );
+//     }
+
+
+//     /* OVERLAY */
+
+//     if (overlayImage) {
+
+//         ctx.drawImage(
+//             overlayImage,
+
+//             0,
+//             0,
+
+//             selectedTemplate.width,
+//             selectedTemplate.height
+//         );
+//     }
+
+
+//     /* FOOTER */
+
+//     if (
+//         !selectedTemplate.overlay
+//     ) {
+
+//         const footer =
+//             selectedTemplate.footer;
+
+//         if (footer) {
+
+//             ctx.fillStyle =
+//                 "#111111";
+
+//             ctx.font =
+//                 `700 ${footer.fontSize}px Arial`;
+
+//             ctx.textAlign =
+//                 "center";
+
+//             ctx.textBaseline =
+//                 "middle";
+
+//             ctx.fillText(
+//                 footer.text,
+//                 footer.x,
+//                 footer.y
+//             );
+//         }
+//     }
+
+
+//     return canvas;
+// }
+
+
+// /* =========================================
+//    GENERATE GIF
+// ========================================= */
+
+// async function generateGIF() {
+
+//     if (
+//         !capturedPhotos ||
+//         capturedPhotos.length === 0
+//     ) {
+//         return null;
+//     }
+
+
+//     if (
+//         typeof GIF ===
+//         "undefined"
+//     ) {
+
+//         throw new Error(
+//             "GIF.js belum tersedia."
+//         );
+//     }
+
+
+//     await waitForTemplateOverlay();
+
+
+//     const workerResponse =
+//         await fetch(
+//             "https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js"
+//         );
+
+
+//     const workerBlob =
+//         await workerResponse.blob();
+
+
+//     const workerURL =
+//         URL.createObjectURL(
+//             workerBlob
+//         );
+
+
+//     const gifWidth = 480;
+
+//     const gifHeight =
+//         Math.round(
+//             gifWidth *
+//             selectedTemplate.height /
+//             selectedTemplate.width
+//         );
+
+
+//     const gif =
+//         new GIF({
+//             workers: 2,
+//             quality: 10,
+//             width: gifWidth,
+//             height: gifHeight,
+//             workerScript: workerURL
+//         });
+
+
+//     /*
+//      * Setiap foto menjadi satu frame GIF.
+//      *
+//      * Jadi otomatis:
+//      *
+//      * 2 foto → 2 frame GIF
+//      * 3 foto → 3 frame GIF
+//      * 4 foto → 4 frame GIF
+//      */
+
+//     capturedPhotos.forEach(
+//         (photo, index) => {
+
+//             const frameCanvas =
+//                 createGifFrame(
+//                     photo,
+//                     index
+//                 );
+
+
+//             const smallCanvas =
+//                 document.createElement(
+//                     "canvas"
+//                 );
+
+//             smallCanvas.width =
+//                 gifWidth;
+
+//             smallCanvas.height =
+//                 gifHeight;
+
+
+//             const smallCtx =
+//                 smallCanvas.getContext(
+//                     "2d"
+//                 );
+
+
+//             smallCtx.drawImage(
+//                 frameCanvas,
+
+//                 0,
+//                 0,
+
+//                 gifWidth,
+//                 gifHeight
+//             );
+
+
+//             gif.addFrame(
+//                 smallCanvas,
+//                 {
+//                     delay: 800,
+//                     copy: true
+//                 }
+//             );
+//         }
+//     );
+
+
+//     return new Promise(
+//         (
+//             resolve,
+//             reject
+//         ) => {
+
+//             gif.on(
+//                 "finished",
+//                 blob => {
+
+//                     URL.revokeObjectURL(
+//                         workerURL
+//                     );
+
+//                     resolve(blob);
+//                 }
+//             );
+
+
+//             gif.on(
+//                 "abort",
+//                 () => {
+
+//                     URL.revokeObjectURL(
+//                         workerURL
+//                     );
+
+//                     reject(
+//                         new Error(
+//                             "GIF generation dibatalkan."
+//                         )
+//                     );
+//                 }
+//             );
+
+
+//             gif.render();
+//         }
+//     );
+// }
+
+
+// /* =========================================
+//    VIDEO
+// ========================================= */
+
+// async function createBrandedVideo(
+//     videoBlob
+// ) {
+//     return videoBlob;
+// }
+
+
+// /* =========================================
+//    GENERATE ALL
+// ========================================= */
+
+// async function generateAllMedia() {
+
+//     showGeneratingState();
+
+//     try {
+
+//         await waitForTemplateOverlay();
+
+
+//         if (
+//             typeof renderEditor ===
+//             "function"
+//         ) {
+
+//             renderEditor();
+//         }
+
+
+//         /* JPG */
+
+//         generatedMedia.jpgBlob =
+//             await generateJPG();
+
+
+//         /* GIF */
+
+//         generatedMedia.gifBlob =
+//             await generateGIF();
+
+
+//         /* VIDEO */
+
+//         if (
+//             typeof latestVideoBlob !==
+//             "undefined" &&
+//             latestVideoBlob
+//         ) {
+
+//             generatedMedia.videoBlob =
+//                 await createBrandedVideo(
+//                     latestVideoBlob
+//                 );
+
+//         } else {
+
+//             generatedMedia.videoBlob =
+//                 null;
+//         }
+
+
+//         /* REVOKE OLD URL */
+
+//         if (
+//             generatedMedia.jpgUrl
+//         ) {
+
+//             URL.revokeObjectURL(
+//                 generatedMedia.jpgUrl
+//             );
+//         }
+
+//         if (
+//             generatedMedia.gifUrl
+//         ) {
+
+//             URL.revokeObjectURL(
+//                 generatedMedia.gifUrl
+//             );
+//         }
+
+//         if (
+//             generatedMedia.videoUrl
+//         ) {
+
+//             URL.revokeObjectURL(
+//                 generatedMedia.videoUrl
+//             );
+//         }
+
+
+//         /* CREATE URL */
+
+//         generatedMedia.jpgUrl =
+//             URL.createObjectURL(
+//                 generatedMedia.jpgBlob
+//             );
+
+
+//         generatedMedia.gifUrl =
+//             generatedMedia.gifBlob
+//                 ? URL.createObjectURL(
+//                     generatedMedia.gifBlob
+//                 )
+//                 : null;
+
+
+//         generatedMedia.videoUrl =
+//             generatedMedia.videoBlob
+//                 ? URL.createObjectURL(
+//                     generatedMedia.videoBlob
+//                 )
+//                 : null;
+
+
+//         /* JPG PREVIEW */
+
+//         const jpgPreview =
+//             document.getElementById(
+//                 "jpgPreview"
+//             );
+
+//         if (jpgPreview) {
+
+//             jpgPreview.src =
+//                 generatedMedia.jpgUrl;
+//         }
+
+
+//         /* GIF PREVIEW */
+
+//         const gifPreview =
+//             document.getElementById(
+//                 "gifPreview"
+//             );
+
+//         if (gifPreview) {
+
+//             gifPreview.src =
+//                 generatedMedia.gifUrl ||
+//                 "";
+//         }
+
+
+//         /* VIDEO PREVIEW */
+
+//         const video =
+//             document.getElementById(
+//                 "videoPreview"
+//             );
+
+//         if (video) {
+
+//             video.src =
+//                 generatedMedia.videoUrl ||
+//                 "";
+
+//             video.load();
+//         }
+
+
+//         showScreen(
+//             "resultScreen"
+//         );
+
+
+//     } catch (error) {
+
+//         console.error(
+//             error
+//         );
+
+//         alert(
+//             "Gagal membuat hasil. Silakan coba lagi."
+//         );
+
+
+//     } finally {
+
+//         hideGeneratingState();
+//     }
+// }
+
+
+// /* =========================================
+//    DOWNLOAD
+// ========================================= */
+
+// async function downloadAllMedia() {
+
+//     const timestamp =
+//         new Date()
+//             .toISOString()
+//             .replace(
+//                 /[:.]/g,
+//                 "-"
+//             );
+
+
+//     downloadBlob(
+//         generatedMedia.jpgBlob,
+//         `semata-wayang-${timestamp}.jpg`
+//     );
+
+
+//     await wait(300);
+
+
+//     if (
+//         generatedMedia.gifBlob
+//     ) {
+
+//         downloadBlob(
+//             generatedMedia.gifBlob,
+//             `semata-wayang-${timestamp}.gif`
+//         );
+//     }
+
+
+//     await wait(300);
+
+
+//     if (
+//         generatedMedia.videoBlob
+//     ) {
+
+//         downloadBlob(
+//             generatedMedia.videoBlob,
+//             `semata-wayang-${timestamp}.webm`
+//         );
+//     }
+// }
+
+
+// /* =========================================
+//    DOWNLOAD BLOB
+// ========================================= */
+
+// function downloadBlob(
+//     blob,
+//     filename
+// ) {
+
+//     if (!blob) {
+//         return;
+//     }
+
+
+//     const url =
+//         URL.createObjectURL(
+//             blob
+//         );
+
+
+//     const link =
+//         document.createElement(
+//             "a"
+//         );
+
+
+//     link.href =
+//         url;
+
+//     link.download =
+//         filename;
+
+
+//     document.body.appendChild(
+//         link
+//     );
+
+
+//     link.click();
+
+//     link.remove();
+
+
+//     setTimeout(
+//         () => {
+
+//             URL.revokeObjectURL(
+//                 url
+//             );
+
+//         },
+//         1000
+//     );
+// }
+
+
+// /* =========================================
+//    GENERATING STATE
+// ========================================= */
+
+// function showGeneratingState() {
+
+//     const button =
+//         document.getElementById(
+//             "generateButton"
+//         );
+
+//     if (!button) {
+//         return;
+//     }
+
+//     button.disabled =
+//         true;
+
+//     button.textContent =
+//         "MEMBUAT...";
+// }
+
+
+// function hideGeneratingState() {
+
+//     const button =
+//         document.getElementById(
+//             "generateButton"
+//         );
+
+//     if (!button) {
+//         return;
+//     }
+
+//     button.disabled =
+//         false;
+
+//     button.textContent =
+//         "BUAT HASIL";
+// }
+
+
+// /* =========================================
+//    WAIT
+// ========================================= */
+
+// function wait(ms) {
+
+//     return new Promise(
+//         resolve => {
+
+//             setTimeout(
+//                 resolve,
+//                 ms
+//             );
+//         }
+//     );
+// }
