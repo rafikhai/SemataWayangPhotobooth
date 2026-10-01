@@ -328,6 +328,33 @@ function generateDownloadQR(
 }
 
 /* =====================================================
+   GENERATE DOWNLOAD QR CODE
+===================================================== */
+async function createDownloadQR() {
+
+    const files = await uploadAllGeneratedMedia();
+
+    if (!files) {
+        throw new Error("File hasil tidak tersedia untuk di-upload.");
+    }
+
+    const downloadUrl = createDownloadPageUrl(files);
+
+    console.log("Download URL:", downloadUrl);
+
+    generateDownloadQR(downloadUrl);
+
+    const status = document.getElementById("qrDownloadStatus");
+
+    if (status) {
+        status.textContent =
+            "Scan QR Code ini menggunakan kamera HP.";
+    }
+
+    return downloadUrl;
+}
+
+/* =====================================================
    RESET QR
 ===================================================== */
 
