@@ -2,6 +2,7 @@
   "name": "semata-wayang-photobooth",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "esbuild js/blob-client-entry.js --bundle --format=iife --outfile=js/blob-client-bundle.js"
   },
