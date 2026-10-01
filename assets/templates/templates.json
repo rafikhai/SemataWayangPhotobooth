@@ -1,0 +1,134 @@
+[
+    {
+        "id": "classic-3",
+        "name": "Classic 3",
+        "description": "3 foto",
+        "width": 1200,
+        "height": 1800,
+        "background": "#ffffff",
+        "countdown": 5,
+        "frames": [
+            {
+                "x": 100,
+                "y": 100,
+                "width": 1000,
+                "height": 450
+            },
+            {
+                "x": 100,
+                "y": 650,
+                "width": 1000,
+                "height": 450
+            },
+            {
+                "x": 100,
+                "y": 1200,
+                "width": 1000,
+                "height": 450
+            }
+        ]
+    },
+
+    {
+        "id": "classic-2",
+        "name": "Classic 2",
+        "description": "2 foto",
+        "width": 1200,
+        "height": 1800,
+        "background": "#ffffff",
+        "countdown": 5,
+        "frames": [
+            {
+                "x": 100,
+                "y": 250,
+                "width": 1000,
+                "height": 550
+            },
+            {
+                "x": 100,
+                "y": 1000,
+                "width": 1000,
+                "height": 550
+            }
+        ],
+        "footer": {
+            "text": "SEMATA WAYANG",
+            "x": 600,
+            "y": 1740,
+            "fontSize": 36
+        }
+    },
+
+    {
+        "id": "custom-2",
+        "name": "Custom 2",
+        "description": "2 foto",
+        "width": 1200,
+        "height": 1800,
+        "background": "#ffffff",
+        "countdown": 5,
+        "image": "custom-2.png",
+        "frames": [
+            {
+                "x": 103,
+                "y": 252,
+                "width": 994,
+                "height": 543
+            },
+            {
+                "x": 103,
+                "y": 1009,
+                "width": 994,
+                "height": 533
+            }
+        ]
+    },
+    {
+        "id": "custom-6",
+        "name": "Custom 6",
+        "description": "6 foto",
+        "width": 1200,
+        "height": 1800,
+        "background": "#ffffff",
+        "countdown": 5,
+        "image": "custom-6.png",
+        "frames": [
+            {
+            "x": 47,
+            "y": 349,
+            "width": 495,
+            "height": 359
+            },
+            {
+            "x": 47,
+            "y": 720,
+            "width": 495,
+            "height": 388
+            },
+            {
+            "x": 47,
+            "y": 1119,
+            "width": 495,
+            "height": 387
+            },
+            {
+            "x": 654,
+            "y": 349,
+            "width": 495,
+            "height": 359
+            },
+            {
+            "x": 654,
+            "y": 720,
+            "width": 495,
+            "height": 388
+            },
+            {
+            "x": 654,
+            "y": 1119,
+            "width": 495,
+            "height": 387
+            }
+        ]
+        }
+]
