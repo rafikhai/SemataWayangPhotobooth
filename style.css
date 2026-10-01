@@ -257,24 +257,48 @@ h2 {
 
 .template-mini {
     width: 100%;
-
     aspect-ratio: 2 / 3;
-
     position: relative;
-
     overflow: hidden;
-
     border-radius: 9px;
-
     background: #eee;
+}
+
+.template-mini-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
 }
 
 .template-mini-frame {
     position: absolute;
-
     background: #ccc;
-
     border: 2px solid #fff;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.template-frame-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 30px;
+    height: 30px;
+
+    border-radius: 50%;
+
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+
+    font-size: 14px;
+    font-weight: 700;
 }
 
 
@@ -888,5 +912,96 @@ input[type="range"] {
         width: 100%;
     }
 
+}
+
+/* =====================================================
+   QR DOWNLOAD
+===================================================== */
+
+.qr-download-section {
+
+    margin: 30px auto;
+
+    padding: 28px;
+
+    max-width: 420px;
+
+    background: #fff;
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 16px;
+
+    text-align: center;
+}
+
+
+.qr-download-eyebrow {
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 2px;
+
+    color: #777;
+
+    margin-bottom: 8px;
+}
+
+
+.qr-download-section h3 {
+
+    margin: 0 0 8px;
+
+    font-size: 20px;
+}
+
+
+.qr-download-section p {
+
+    margin: 0 0 20px;
+
+    color: #777;
+
+    font-size: 14px;
+}
+
+
+.qr-code {
+
+    width: 256px;
+
+    height: 256px;
+
+    margin: 0 auto;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+
+.qr-code img {
+
+    display: block;
+
+    width: 256px;
+
+    height: 256px;
+}
+
+
+.qr-download-files {
+
+    margin-top: 18px;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+
+    color: #999;
 }
 
