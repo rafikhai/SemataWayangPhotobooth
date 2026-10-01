@@ -219,7 +219,7 @@ function stopRecording() {
 ===================================================== */
 
 async function captureMoment(
-    seconds = 3
+    seconds = 5
 ) {
 
     latestGifFrames = [];
