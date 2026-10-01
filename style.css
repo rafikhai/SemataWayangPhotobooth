@@ -1,0 +1,892 @@
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    background: #0b0b0b;
+    color: #ffffff;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.app {
+    min-height: 100vh;
+    background: #0b0b0b;
+}
+
+
+/* =====================================================
+   SCREEN
+===================================================== */
+
+.screen {
+    display: none;
+
+    width: 100%;
+    min-height: 100vh;
+
+    padding: 32px 5vw;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* =====================================================
+   HOME
+===================================================== */
+
+#homeScreen {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.home-container {
+    width: min(500px, 90vw);
+}
+
+.brand {
+    font-size: clamp(40px, 7vw, 72px);
+
+    font-weight: 800;
+
+    letter-spacing: -0.06em;
+}
+
+.home-subtitle {
+    margin-top: 8px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.35em;
+
+    color: #888;
+}
+
+.home-description {
+    margin: 25px 0 30px;
+
+    color: #777;
+
+    font-size: 14px;
+}
+
+
+/* =====================================================
+   TEXT
+===================================================== */
+
+.eyebrow {
+    margin-bottom: 8px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.16em;
+
+    color: #777;
+}
+
+h2 {
+    font-size: clamp(26px, 4vw, 38px);
+
+    letter-spacing: -0.04em;
+}
+
+.page-header {
+    width: min(1100px, 100%);
+
+    margin: 0 auto 28px;
+}
+
+.page-header p {
+    margin-top: 8px;
+
+    color: #777;
+
+    font-size: 13px;
+}
+
+.page-header.center {
+    text-align: center;
+}
+
+
+/* =====================================================
+   BUTTON
+===================================================== */
+
+.btn {
+    min-height: 46px;
+
+    padding: 0 20px;
+
+    border-radius: 9px;
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    font-size: 11px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.08em;
+
+    transition: 0.18s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: #ffffff;
+
+    color: #080808;
+
+    border-color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #e8e8e8;
+}
+
+.btn-secondary {
+    background: #161616;
+
+    color: #ffffff;
+}
+
+.btn-secondary:hover {
+    background: #202020;
+}
+
+.btn-large {
+    min-width: 170px;
+    min-height: 52px;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+
+/* =====================================================
+   TEMPLATE
+===================================================== */
+
+.template-list {
+    width: min(1100px, 100%);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(210px, 1fr));
+
+    gap: 16px;
+}
+
+.template-card {
+    padding: 14px;
+
+    background: #111111;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 14px;
+
+    transition: 0.18s ease;
+
+    cursor: pointer;
+}
+
+.template-card:hover {
+    border-color:
+        rgba(255,255,255,0.22);
+}
+
+.template-card.selected {
+    border-color: #ffffff;
+}
+
+.template-card h3 {
+    margin-top: 12px;
+
+    font-size: 15px;
+}
+
+.template-card p {
+    margin-top: 5px;
+
+    color: #777;
+
+    font-size: 12px;
+}
+
+.template-mini {
+    width: 100%;
+
+    aspect-ratio: 2 / 3;
+
+    position: relative;
+
+    overflow: hidden;
+
+    border-radius: 9px;
+
+    background: #eee;
+}
+
+.template-mini-frame {
+    position: absolute;
+
+    background: #ccc;
+
+    border: 2px solid #fff;
+}
+
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.bottom-actions {
+    width: min(1100px, 100%);
+
+    margin: 25px auto 0;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 10px;
+}
+
+.center-actions {
+    justify-content: center;
+}
+
+
+/* =====================================================
+   CAMERA
+===================================================== */
+
+#cameraScreen {
+    align-items: center;
+}
+
+.camera-header {
+    width: min(1000px, 100%);
+
+    margin-bottom: 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+}
+
+.photo-counter {
+    padding: 8px 12px;
+
+    border-radius: 7px;
+
+    background: #161616;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.1);
+
+    color: #aaa;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.1em;
+}
+
+.camera-container {
+    width: min(1000px, 92vw);
+
+    position: relative;
+
+    aspect-ratio: 16 / 9;
+
+    overflow: hidden;
+
+    background: #000;
+
+    border-radius: 14px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.1);
+}
+
+#cameraVideo {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: cover;
+
+    transform: scaleX(-1);
+}
+
+.countdown {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 5;
+
+    font-size: clamp(80px, 12vw, 150px);
+
+    font-weight: 800;
+
+    color: #fff;
+
+    text-shadow:
+        0 5px 25px
+        rgba(0,0,0,0.7);
+
+    pointer-events: none;
+}
+
+.camera-brand {
+    position: absolute;
+
+    bottom: 15px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 4;
+
+    padding: 6px 10px;
+
+    background: rgba(0,0,0,0.55);
+
+    border-radius: 5px;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.18em;
+}
+
+.camera-instruction {
+    margin-top: 12px;
+
+    color: #777;
+
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   PREVIEW
+===================================================== */
+
+#previewScreen {
+    align-items: center;
+
+    justify-content: center;
+
+    text-align: center;
+}
+
+.single-photo-preview {
+    width: min(430px, 80vw);
+
+    padding: 10px;
+
+    background: #111;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.1);
+
+    border-radius: 14px;
+}
+
+#photoPreviewCanvas {
+    display: block;
+
+    width: 100%;
+    height: auto;
+
+    max-height: 60vh;
+
+    object-fit: contain;
+
+    border-radius: 7px;
+}
+
+
+/* =====================================================
+   EDITOR
+===================================================== */
+
+.editor-layout {
+    width: min(1100px, 100%);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        280px;
+
+    gap: 20px;
+}
+
+.editor-preview {
+    min-height: 580px;
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
+
+    background: #111;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 14px;
+}
+
+#editorCanvas {
+    display: block;
+
+    max-width: 100%;
+    max-height: 70vh;
+
+    width: auto;
+    height: auto;
+
+    background: white;
+}
+
+.editor-controls {
+    padding: 18px;
+
+    background: #111;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 14px;
+}
+
+.control-group {
+    margin-bottom: 22px;
+}
+
+.control-group label {
+    display: block;
+
+    margin-bottom: 9px;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.14em;
+
+    color: #777;
+}
+
+.frame-selector {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 6px;
+}
+
+.frame-button {
+    min-height: 36px;
+
+    border-radius: 7px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.1);
+
+    background: #181818;
+
+    color: #aaa;
+
+    font-size: 10px;
+
+    cursor: pointer;
+}
+
+.frame-button.active {
+    background: #fff;
+
+    color: #000;
+
+    border-color: #fff;
+}
+
+input[type="range"] {
+    width: 100%;
+
+    accent-color: #fff;
+}
+
+.editor-actions {
+    display: grid;
+
+    gap: 7px;
+}
+
+.editor-actions .btn {
+    width: 100%;
+}
+
+
+/* =====================================================
+   RESULT
+===================================================== */
+
+.result-grid {
+    width: min(1050px, 100%);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+}
+
+.result-card {
+    padding: 10px;
+
+    background: #111;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.08);
+
+    border-radius: 13px;
+}
+
+.result-card-title {
+    height: 34px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 3px;
+}
+
+.result-card-title strong {
+    font-size: 11px;
+}
+
+.result-card-title span {
+    font-size: 8px;
+
+    letter-spacing: 0.12em;
+
+    color: #666;
+}
+
+.result-preview {
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+
+    overflow: hidden;
+
+    border-radius: 8px;
+
+    background: #050505;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+}
+
+.result-preview img,
+.result-preview video {
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    object-fit: contain;
+}
+
+.result-actions {
+    width: min(1050px, 100%);
+
+    margin: 22px auto 0;
+
+    display: flex;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 8px;
+}
+
+
+/* =====================================================
+   EMAIL MODAL
+===================================================== */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 999;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(0,0,0,0.75);
+
+    backdrop-filter: blur(5px);
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    width: min(390px, 92vw);
+
+    position: relative;
+
+    padding: 25px;
+
+    background: #151515;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.12);
+
+    border-radius: 15px;
+
+    box-shadow:
+        0 25px 70px
+        rgba(0,0,0,0.5);
+}
+
+.modal-content h2 {
+    font-size: 25px;
+}
+
+.modal-content p {
+    margin: 8px 0 18px;
+
+    color: #777;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.modal-content input {
+    width: 100%;
+
+    height: 46px;
+
+    padding: 0 13px;
+
+    margin-bottom: 9px;
+
+    border-radius: 8px;
+
+    border:
+        1px solid
+        rgba(255,255,255,0.12);
+
+    outline: none;
+
+    background: #0c0c0c;
+
+    color: #fff;
+}
+
+.modal-content input:focus {
+    border-color: #555;
+}
+
+.modal-close {
+    position: absolute;
+
+    top: 9px;
+    right: 12px;
+
+    width: 30px;
+    height: 30px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777;
+
+    font-size: 25px;
+
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: #fff;
+}
+
+.email-status {
+    min-height: 18px;
+
+    margin-top: 10px;
+
+    text-align: center;
+
+    font-size: 11px;
+
+    color: #888;
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 800px) {
+
+    .screen {
+        padding:
+            25px
+            18px;
+    }
+
+    .editor-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .editor-preview {
+        min-height: auto;
+    }
+
+    .editor-controls {
+        width: 100%;
+    }
+
+    .result-grid {
+        grid-template-columns: 1fr;
+
+        width: min(420px, 100%);
+    }
+
+    .result-preview {
+        aspect-ratio: 1 / 1;
+    }
+
+}
+
+@media (max-width: 500px) {
+
+    .brand {
+        font-size: 42px;
+    }
+
+    .template-list {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .bottom-actions {
+        flex-direction: column;
+    }
+
+    .bottom-actions .btn {
+        width: 100%;
+    }
+
+    .camera-container {
+        width: 100%;
+
+        aspect-ratio: 4 / 3;
+    }
+
+    .camera-header {
+        align-items: flex-start;
+    }
+
+    .result-actions {
+        flex-direction: column;
+    }
+
+    .result-actions .btn {
+        width: 100%;
+    }
+
+}
+
