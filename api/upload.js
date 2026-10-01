@@ -1,5 +1,4 @@
-import { handleUpload } from "@vercel/blob/client";
-
+import { put } from "@vercel/blob";
 
 export default async function handler(request) {
 
@@ -18,89 +17,65 @@ export default async function handler(request) {
         );
     }
 
-
     try {
 
-        const body =
-            await request.json();
+        const formData =
+            await request.formData();
 
+        const file =
+            formData.get("file");
 
-        const jsonResponse =
-            await handleUpload({
+        const filename =
+            formData.get("filename");
 
-                body,
+        const contentType =
+            formData.get("contentType");
 
-                request,
+        if (!file) {
 
-
-                onBeforeGenerateToken:
-                    async (
-                        pathname,
-                        clientPayload
-                    ) => {
-
-                        return {
-
-                            /*
-                             * File yang boleh diupload.
-                             */
-
-                            allowedContentTypes: [
-
-                                "image/jpeg",
-
-                                "image/gif",
-
-                                "video/webm"
-                            ],
-
-
-                            /*
-                             * Setiap upload mendapatkan
-                             * nama unik.
-                             */
-
-                            addRandomSuffix: true,
-
-
-                            /*
-                             * Data tambahan dari browser.
-                             */
-
-                            tokenPayload:
-                                clientPayload || ""
-                        };
-                    },
-
-
-                onUploadCompleted:
-                    async ({
-                        blob,
-                        tokenPayload
-                    }) => {
-
-                        /*
-                         * Untuk sementara tidak perlu
-                         * menyimpan database.
-                         *
-                         * File sudah berada di
-                         * Vercel Blob.
-                         */
-
-                        console.log(
-                            "Upload selesai:",
-                            blob.url
-                        );
-
+            return new Response(
+                JSON.stringify({
+                    error: "File tidak ditemukan."
+                }),
+                {
+                    status: 400,
+                    headers: {
+                        "Content-Type":
+                            "application/json"
                     }
+                }
+            );
+        }
 
-            });
+        const blob =
+            await put(
+                filename ||
+                    file.name ||
+                    `upload-${Date.now()}`,
 
+                file,
+
+                {
+                    access: "public",
+
+                    addRandomSuffix: true,
+
+                    contentType:
+                        contentType ||
+                        file.type ||
+                        "application/octet-stream"
+                }
+            );
+
+        console.log(
+            "Upload selesai:",
+            blob.url
+        );
 
         return new Response(
-            JSON.stringify(
-                jsonResponse
-            ),
+            JSON.stringify({
+                url: blob.url
+            }),
             {
                 status: 200,
                 headers: {
@@ -110,14 +85,12 @@ export default async function handler(request) {
             }
         );
 
-
     } catch (error) {
 
         console.error(
             "Upload error:",
             error
         );
-
 
         return new Response(
             JSON.stringify({
@@ -127,7 +100,7 @@ export default async function handler(request) {
                         : String(error)
             }),
             {
-                status: 400,
+                status: 500,
                 headers: {
                     "Content-Type":
                         "application/json"
