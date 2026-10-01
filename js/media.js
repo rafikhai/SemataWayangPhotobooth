@@ -13,7 +13,6 @@ let downloadSession = null;
  */
 
 async function uploadFileToVercel(
- 
     blob,
     filename,
     contentType
@@ -32,6 +31,7 @@ async function uploadFileToVercel(
         throw new Error(
             "Vercel Blob Client belum tersedia."
         );
+
     }
 
 
@@ -55,8 +55,9 @@ async function uploadFileToVercel(
 
             {
 
-                access:
-                    "public",
+                access: "public",
+
+                contentType: contentType,
 
                 handleUploadUrl:
                     "/api/upload",
@@ -67,8 +68,11 @@ async function uploadFileToVercel(
                         console.log(
                             `${filename}: ${progress.percentage}%`
                         );
+
                     }
+
             }
+
         );
 
 
@@ -80,6 +84,7 @@ async function uploadFileToVercel(
         throw new Error(
             "Vercel Blob tidak mengembalikan URL."
         );
+
     }
 
 
@@ -90,6 +95,7 @@ async function uploadFileToVercel(
 
 
     return result.url;
+
 }
 
 /* =====================================================
@@ -236,40 +242,14 @@ async function uploadAllGeneratedMedia() {
    CREATE DOWNLOAD PAGE URL
 ===================================================== */
 
-function createDownloadPageUrl(
-    files
-) {
-
-    const json =
-        JSON.stringify(
-            files
-        );
-
-
-    /*
-     * Encode JSON menjadi Base64.
-     */
-
-    const encoded =
-        btoa(
-            encodeURIComponent(
-                json
-            )
-        );
-
-
-    /*
-     * Halaman download berada
-     * di domain Vercel yang sama.
-     */
+function createDownloadPageUrl(manifestUrl) {
 
     return (
         window.location.origin +
-        "/download.html?files=" +
-        encodeURIComponent(
-            encoded
-        )
+        "/download.html?manifest=" +
+        encodeURIComponent(manifestUrl)
     );
+
 }
 /* =====================================================
    GENERATE QR CODE
@@ -351,26 +331,101 @@ function generateDownloadQR(
 ===================================================== */
 async function createDownloadQR() {
 
-    const files = await uploadAllGeneratedMedia();
+    const files =
+        await uploadAllGeneratedMedia();
+
 
     if (!files) {
-        throw new Error("File hasil tidak tersedia untuk di-upload.");
+
+        throw new Error(
+            "File hasil tidak tersedia untuk di-upload."
+        );
+
     }
 
-    const downloadUrl = createDownloadPageUrl(files);
 
-    console.log("Download URL:", downloadUrl);
+    /*
+     * Buat manifest JSON kecil
+     * yang berisi semua URL hasil upload.
+     */
 
-    generateDownloadQR(downloadUrl);
+    const manifestBlob =
+        new Blob(
 
-    const status = document.getElementById("qrDownloadStatus");
+            [
+                JSON.stringify(files)
+            ],
+
+            {
+                type: "application/json"
+            }
+
+        );
+
+
+    const timestamp =
+        Date.now();
+
+
+    /*
+     * Upload manifest ke Vercel Blob.
+     */
+
+    const manifestUrl =
+        await uploadFileToVercel(
+
+            manifestBlob,
+
+            `semata-wayang/${timestamp}/manifest.json`,
+
+            "application/json"
+
+        );
+
+
+    console.log(
+        "Manifest URL:",
+        manifestUrl
+    );
+
+
+    /*
+     * QR hanya membawa URL manifest.
+     */
+
+    const downloadUrl =
+        createDownloadPageUrl(
+            manifestUrl
+        );
+
+
+    console.log(
+        "Download URL:",
+        downloadUrl
+    );
+
+
+    generateDownloadQR(
+        downloadUrl
+    );
+
+
+    const status =
+        document.getElementById(
+            "qrDownloadStatus"
+        );
+
 
     if (status) {
+
         status.textContent =
             "Scan QR Code ini menggunakan kamera HP.";
+
     }
 
+
     return downloadUrl;
+
 }
 
 /* =====================================================
