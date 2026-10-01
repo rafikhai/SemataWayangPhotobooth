@@ -288,6 +288,7 @@ function generateDownloadQR(
 
             status.textContent =
                 "QR Code tidak dapat dimuat.";
+
         }
 
         return;
@@ -313,8 +314,9 @@ function generateDownloadQR(
             colorLight:
                 "#ffffff",
 
-            // correctLevel:
-            //     QRCode.CORRECT_LEVEL_H
+            correctLevel:
+                QRCode.CorrectLevel.L
+
         }
     );
 
@@ -323,9 +325,10 @@ function generateDownloadQR(
 
         status.textContent =
             "Scan QR Code menggunakan kamera HP.";
-    }
-}
 
+    }
+
+}
 /* =====================================================
    GENERATE DOWNLOADQR CODE
 ===================================================== */
