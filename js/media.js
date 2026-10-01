@@ -1,15 +1,19 @@
 /* =====================================================
-   VERCEL BLOB UPLOAD
+   VERCEL BLOB CLIENT UPLOAD
 ===================================================== */
 
 let downloadSession = null;
 
 
 /*
- * Upload satu file ke Vercel Blob.
+ * Upload langsung dari browser ke Vercel Blob.
+ *
+ * /api/upload hanya digunakan untuk
+ * mendapatkan client upload token.
  */
 
 async function uploadFileToVercel(
+ 
     blob,
     filename,
     contentType
@@ -19,60 +23,71 @@ async function uploadFileToVercel(
         return null;
     }
 
-    const formData =
-        new FormData();
 
-    formData.append(
-        "file",
-        blob,
-        filename
+    if (
+        typeof window.vercelBlobUpload !==
+        "function"
+    ) {
+
+        throw new Error(
+            "Vercel Blob Client belum tersedia."
+        );
+    }
+
+
+    console.log(
+        "Upload mulai:",
+        filename,
+        `${(
+            blob.size /
+            1024 /
+            1024
+        ).toFixed(2)} MB`
     );
 
-    formData.append(
-        "filename",
-        filename
-    );
 
-    formData.append(
-        "contentType",
-        contentType ||
-        blob.type ||
-        "application/octet-stream"
-    );
+    const result =
+        await window.vercelBlobUpload(
 
-    const response =
-        await fetch(
-            "/api/upload",
+            filename,
+
+            blob,
+
             {
-                method: "POST",
-                body: formData
+
+                access:
+                    "public",
+
+                handleUploadUrl:
+                    "/api/upload",
+
+                onUploadProgress:
+                    progress => {
+
+                        console.log(
+                            `${filename}: ${progress.percentage}%`
+                        );
+                    }
             }
         );
 
-    if (!response.ok) {
 
-        const errorText =
-            await response.text();
+    if (
+        !result ||
+        !result.url
+    ) {
 
         throw new Error(
-            `Upload gagal (${response.status}): ${errorText}`
+            "Vercel Blob tidak mengembalikan URL."
         );
     }
 
-    const result =
-        await response.json();
-
-    if (!result.url) {
-
-        throw new Error(
-            "Server tidak mengembalikan URL Blob."
-        );
-    }
 
     console.log(
-        "File berhasil di-upload:",
+        "Upload selesai:",
         result.url
     );
+
 
     return result.url;
 }
