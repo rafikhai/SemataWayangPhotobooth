@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { handleUpload } from "@vercel/blob/client";
 
 export default async function handler(request) {
 
@@ -19,63 +19,62 @@ export default async function handler(request) {
 
     try {
 
-        const formData =
-            await request.formData();
+        const body =
+            await request.json();
 
-        const file =
-            formData.get("file");
 
-        const filename =
-            formData.get("filename");
+        const jsonResponse =
+            await handleUpload({
 
-        const contentType =
-            formData.get("contentType");
+                body,
 
-        if (!file) {
+                request,
 
-            return new Response(
-                JSON.stringify({
-                    error: "File tidak ditemukan."
-                }),
-                {
-                    status: 400,
-                    headers: {
-                        "Content-Type":
-                            "application/json"
+                onBeforeGenerateToken:
+                    async (
+                        pathname,
+                        clientPayload
+                    ) => {
+
+                        console.log(
+                            "Generating Blob token:",
+                            pathname
+                        );
+
+                        return {
+
+                            allowedContentTypes: [
+                                "image/jpeg",
+                                "image/gif",
+                                "video/webm"
+                            ],
+
+                            addRandomSuffix:
+                                true,
+
+                            tokenPayload:
+                                clientPayload || ""
+                        };
+                    },
+
+                onUploadCompleted:
+                    async ({
+                        blob,
+                        tokenPayload
+                    }) => {
+
+                        console.log(
+                            "Blob upload completed:",
+                            blob.url
+                        );
                     }
-                }
-            );
-        }
+            });
 
-        const blob =
-            await put(
-                filename ||
-                    file.name ||
-                    `upload-${Date.now()}`,
-
-                file,
-
-                {
-                    access: "public",
-
-                    addRandomSuffix: true,
-
-                    contentType:
-                        contentType ||
-                        file.type ||
-                        "application/octet-stream"
-                }
-            );
-
-        console.log(
-            "Upload selesai:",
-            blob.url
-        );
 
         return new Response(
-            JSON.stringify({
-                url: blob.url
-            }),
+            JSON.stringify(
+                jsonResponse
+            ),
             {
                 status: 200,
                 headers: {
@@ -88,7 +87,7 @@ export default async function handler(request) {
     } catch (error) {
 
         console.error(
-            "Upload error:",
+            "Blob upload error:",
             error
         );
 
@@ -100,7 +99,7 @@ export default async function handler(request) {
                         : String(error)
             }),
             {
-                status: 500,
+                status: 400,
                 headers: {
                     "Content-Type":
                         "application/json"
