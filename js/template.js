@@ -1,94 +1,62 @@
-const templates = [
+let templates = [];
 
-    {
-        id: "classic-3",
+let selectedTemplate = null;
 
-        name: "Classic 3",
 
-        description: "3 foto",
+/* =========================================
+   LOAD TEMPLATE DARI JSON
+========================================= */
 
-        width: 1200,
-        height: 1800,
+async function loadTemplates() {
+    try {
+        const response = await fetch(
+            "assets/templates/templates.json"
+        );
 
-        background: "#ffffff",
+        if (!response.ok) {
+            throw new Error(
+                `HTTP error ${response.status}`
+            );
+        }
 
-        countdown: 5,
+        templates = await response.json();
 
-        frames: [
+        /*
+         * Tambahkan path lengkap untuk gambar template.
+         */
+        templates = templates.map(template => {
 
-            {
-                x: 100,
-                y: 100,
-                width: 1000,
-                height: 450
-            },
-
-            {
-                x: 100,
-                y: 650,
-                width: 1000,
-                height: 450
-            },
-
-            {
-                x: 100,
-                y: 1200,
-                width: 1000,
-                height: 450
+            if (template.image) {
+                template.overlay =
+                    "assets/templates/" +
+                    template.image;
+            } else {
+                template.overlay = null;
             }
 
-        ],
+            return template;
+        });
 
-        footer: {
-            text: "SEMATA WAYANG",
-            x: 600,
-            y: 1740,
-            fontSize: 36
-        }
-    },
+        console.log(
+            "Template berhasil dimuat:",
+            templates
+        );
 
+        return templates;
 
-    {
-        id: "classic-2",
+    } catch (error) {
 
-        name: "Classic 2",
+        console.error(
+            "Gagal memuat templates.json:",
+            error
+        );
 
-        description: "2 foto",
+        templates = [];
 
-        width: 1200,
-        height: 1800,
+        alert(
+            "Template tidak dapat dimuat. Pastikan aplikasi dijalankan melalui server lokal."
+        );
 
-        background: "#ffffff",
-
-        countdown: 5,
-
-        frames: [
-
-            {
-                x: 100,
-                y: 250,
-                width: 1000,
-                height: 550
-            },
-
-            {
-                x: 100,
-                y: 1000,
-                width: 1000,
-                height: 550
-            }
-
-        ],
-
-        footer: {
-            text: "SEMATA WAYANG",
-            x: 600,
-            y: 1740,
-            fontSize: 36
-        }
+        return [];
     }
-
-];
-
-let selectedTemplate = templates[0];
-
+}
